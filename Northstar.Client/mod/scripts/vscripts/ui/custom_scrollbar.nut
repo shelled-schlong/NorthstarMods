@@ -8,6 +8,7 @@ global function SetScrollbarHorizontal
 global function FindScrollbarSafe
 global function FindScrollbar
 global function SetScrollbarPosition
+global function GetFocusedScrollbar
 
 global struct ScrollbarExt {
 	array<void functionref( int x, int y )> callbacks
@@ -111,6 +112,11 @@ void function SetScrollbarPosition( ScrollbarExt scrollbar, int x, int y )
 	Hud_SetPos( scrollbar.movementCapture, x, y )
 	Hud_SetPos( scrollbar.button, x, y )
 	Hud_SetPos( scrollbar.panel, x, y )
+}
+
+ScrollbarExt function GetFocusedScrollbar()
+{
+	return file.scrollbars[ GetFocusedScrollbarIndex() ]
 }
 
 // * #####################
