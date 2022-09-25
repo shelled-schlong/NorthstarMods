@@ -11,7 +11,7 @@ global function SetScrollbarPosition
 
 global struct ScrollbarExt {
 	array<void functionref( int x, int y )> callbacks
-	var scrollbar
+	var component
 	var cover
 	var movementCapture
 	var button
@@ -79,7 +79,7 @@ void function RegisterScrollbar( var scrollbar, bool horizontal = false )
 	AddButtonEventHandler( cover, UIE_GET_FOCUS, CoverGetFocus )
 	file.covers.append( cover )
 	ScrollbarExt bar
-	bar.scrollbar = scrollbar
+	bar.component = scrollbar
 	bar.cover = cover
 	bar.movementCapture = Hud_GetChild( scrollbar, "MouseMovementCapture" )
 	bar.button = Hud_GetChild( scrollbar, "SliderButton" )
@@ -91,7 +91,7 @@ void function RegisterScrollbar( var scrollbar, bool horizontal = false )
 ScrollbarExt ornull function FindScrollbarSafe( var scrollbar )
 {
 	foreach( ScrollbarExt container in file.scrollbars )
-		if( container.scrollbar == scrollbar )
+		if( container.component == scrollbar )
 			return container
 	return null
 }
@@ -151,7 +151,7 @@ void function RepositionScrollbar_Horizontal( ScrollbarExt scrollbar, int x, int
 	y = y * -1
 
 	int minXPos = Hud_GetBaseX( scrollbar.button )
-	int maxXPos = minXPos + Hud_GetWidth( scrollbar.scrollbar ) - Hud_GetWidth( scrollbar.button )
+	int maxXPos = minXPos + Hud_GetWidth( scrollbar.component ) - Hud_GetWidth( scrollbar.button )
 
 	int pos = expect int( Hud_GetPos( scrollbar.button )[0] )
 	int newPos = pos - x
@@ -173,7 +173,7 @@ void function RepositionScrollbar_Vertical( ScrollbarExt scrollbar, int x, int y
 	var sliderPanel = scrollbar.panel
 
 	int minYPos = Hud_GetBaseY( scrollbar.button )
-	int maxYPos = minYPos + Hud_GetHeight( scrollbar.scrollbar ) - Hud_GetHeight( scrollbar.button )
+	int maxYPos = minYPos + Hud_GetHeight( scrollbar.component ) - Hud_GetHeight( scrollbar.button )
 
 	int pos = expect int( Hud_GetPos( scrollbar.button )[1] )
 	int newPos = pos - y
