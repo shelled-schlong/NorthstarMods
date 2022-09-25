@@ -94,6 +94,11 @@ void function RegisterScrollbar( var scrollbar, bool horizontal = false )
 	bar.panel = Hud_GetChild( scrollbar, "BtnModListSliderPanel" )
 	bar.horizontal = horizontal
 	file.scrollbars.append( bar )
+
+	if( horizontal )
+		SetScrollbarHeight( scrollbar, Hud_GetHeight( scrollbar ) )
+	else
+		SetScrollbarWidth( scrollbar, Hud_GetWidth( scrollbar ) )
 }
 
 ScrollbarExt ornull function FindScrollbarSafe( var scrollbar )
