@@ -2,6 +2,7 @@ untyped
 global function UseCustomScrollbars
 global function RegisterScrollbar
 global function RegisterScrollbarMoveCallback
+global function RegisterScrollbarMoveCallbackAttached
 global function SetScrollbarHeight
 global function SetScrollbarWidth
 global function SetScrollbarHorizontal
@@ -12,6 +13,7 @@ global function GetFocusedScrollbar
 
 global struct ScrollbarExt {
 	array<void functionref( int x, int y )> callbacks
+	array<void functionref( ScrollbarExt component, int x, int y )> attachedCallbacks
 	var component
 	var cover
 	var movementCapture
@@ -43,6 +45,11 @@ void function UseCustomScrollbars( var menu )
 void function RegisterScrollbarMoveCallback( var scrollbar, void functionref( int x, int y ) f )
 {
 	FindScrollbar( scrollbar ).callbacks.append( f )
+}
+
+void function RegisterScrollbarMoveCallbackAttached( var scrollbar, void functionref( ScrollbarExt component, int x, int y ) f )
+{
+	FindScrollbar( scrollbar ).attachedCallbacks.append( f )
 }
 
 void function SetScrollbarHeight( var scrollbar, int height )
@@ -144,7 +151,8 @@ void function MouseMovementHandler( int x, int y )
 	{
 		callback( x, y )
 	}
-
+	foreach( void functionref( ScrollbarExt component, int x, int y ) callback in file.scrollbars[ idx ].attachedCallbacks )
+		callback( file.scrollbars[ idx ], x, y )
 	if( file.scrollbars[ idx ].horizontal )
 		RepositionScrollbar_Horizontal( file.scrollbars[ idx ], x, y )
 	else
