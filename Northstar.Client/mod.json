@@ -109,6 +109,10 @@
 		{
 			"Path": "ui/custom_scrollbar.nut",
 			"RunOn": "UI"
+		},
+		{
+			"Path": "ui/scrollable_list.nut",
+			"RunOn": "UI"
 		}
 	],
 	"Localisation": [
