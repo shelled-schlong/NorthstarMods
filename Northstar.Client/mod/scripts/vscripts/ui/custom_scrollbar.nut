@@ -20,6 +20,8 @@ global struct ScrollbarExt {
 	var button
 	var panel
 	bool horizontal
+	int vX
+	int vY
 }
 
 struct {
@@ -144,39 +146,116 @@ void function CoverGetFocus( var cover )
 
 	ScrollbarExt s = file.scrollbars[ GetFocusedScrollbarIndex() ]
 	Hud_SetFocused( s.button )
+
+	s.vY = Hud_GetY( s.button )
+	s.vX = Hud_GetX( s.button )
 }
 
 void function MouseMovementHandler( int x, int y )
 {
 	int idx = GetFocusedScrollbarIndex()
-	Hud_SetFocused( file.scrollbars[ idx ].button )
+	ScrollbarExt scrollbar = file.scrollbars[ idx ]
+	Hud_SetFocused( scrollbar.button )
 	if( idx < 0 )
 		return
-	foreach( void functionref( int x, int y ) callback in file.scrollbars[ idx ].callbacks )
+	
+	bool oob
+	if( scrollbar.horizontal )
 	{
-		callback( x, y )
+		// printt( scrollbar.vX, Hud_GetBaseX( scrollbar.component ), Hud_GetWidth( scrollbar.component ) )
+		oob = scrollbar.vX < Hud_GetBaseX( scrollbar.component ) || scrollbar.vX > Hud_GetWidth( scrollbar.component )
+	} else {
+		oob = scrollbar.vY < Hud_GetBaseY( scrollbar.component ) || scrollbar.vY > Hud_GetHeight( scrollbar.component )
 	}
-	foreach( void functionref( ScrollbarExt component, int x, int y ) callback in file.scrollbars[ idx ].attachedCallbacks )
-		callback( file.scrollbars[ idx ], x, y )
-	if( file.scrollbars[ idx ].horizontal )
-		RepositionScrollbar_Horizontal( file.scrollbars[ idx ], x, y )
-	else
-		RepositionScrollbar_Vertical( file.scrollbars[ idx ], x, y )
+
+	if( oob )
+	{
+		if( scrollbar.horizontal )
+		{
+			int outerX
+			int diff
+			if( scrollbar.vX < Hud_GetBaseX( scrollbar.component ) )
+			{
+				outerX = Hud_GetX( scrollbar.component )
+				diff = outerX - Hud_GetX( scrollbar.button )
+			}
+			else
+			{
+				outerX = Hud_GetBaseX( scrollbar.button ) + Hud_GetWidth( scrollbar.component ) - Hud_GetWidth( scrollbar.button )
+				diff = outerX - Hud_GetX( scrollbar.button )
+			}
+			if( abs( diff ) )
+				// foreach( void functionref( ScrollbarExt component, int x, int y ) callback in scrollbar.attachedCallbacks )
+				// 	callback( scrollbar, x, y )
+
+			SetScrollbarPosition( scrollbar, outerX, Hud_GetY( scrollbar.button ) )
+
+			InvokeCallbacks( scrollbar, diff, 0)
+		}
+		else
+		{
+			int outerY
+			int diff
+			if( scrollbar.vY < Hud_GetBaseY( scrollbar.component ) )
+			{
+				outerY = Hud_GetY( scrollbar.component )
+				diff = outerY - Hud_GetY( scrollbar.button )
+			}
+			else
+			{
+				outerY = Hud_GetBaseY( scrollbar.button ) + Hud_GetHeight( scrollbar.component ) - Hud_GetHeight( scrollbar.button )
+				diff = outerY - Hud_GetY( scrollbar.button )
+			}
+			if( abs( diff ) )
+				// foreach( void functionref( ScrollbarExt component, int x, int y ) callback in scrollbar.attachedCallbacks )
+				// 	callback( scrollbar, x, y )
+
+
+			SetScrollbarPosition( scrollbar, Hud_GetX( scrollbar.button ), outerY )
+			// scrollbar.vY = Hud_GetHeight( scrollbar.component )
+			InvokeCallbacks( scrollbar, 0, diff )
+		}
+	}
+
+	if( !oob )
+	{
+		InvokeCallbacks( scrollbar, x, y )
+
+		if( scrollbar.horizontal )
+			RepositionScrollbar_Horizontal( scrollbar, x, y )
+		else
+			RepositionScrollbar_Vertical( scrollbar, x, y )
+	}
+	scrollbar.vX += x
+	scrollbar.vY += y
+}
+
+void function InvokeCallbacks( ScrollbarExt scrollbar, int x, int y )
+{
+	foreach( void functionref( int x, int y ) callback in scrollbar.callbacks )
+		callback( x, y )
+	foreach( void functionref( ScrollbarExt component, int x, int y ) callback in scrollbar.attachedCallbacks )
+		callback( scrollbar, x, y )
 }
 
 void function RepositionScrollbar_Horizontal( ScrollbarExt scrollbar, int x, int y )
 {
-	x = x * -1
-	y = y * -1
-
 	int minXPos = Hud_GetBaseX( scrollbar.button )
 	int maxXPos = minXPos + Hud_GetWidth( scrollbar.component ) - Hud_GetWidth( scrollbar.button )
 
 	int pos = expect int( Hud_GetPos( scrollbar.button )[0] )
-	int newPos = pos - x
+	int newPos = pos + x
 
-	if ( newPos > maxXPos ) newPos = maxXPos
-	if ( newPos < minXPos ) newPos = minXPos
+	if ( newPos > maxXPos )
+	{
+		newPos = maxXPos
+		scrollbar.vX = Hud_GetWidth( scrollbar.component )
+	}
+	else if ( newPos < minXPos )
+	{
+		newPos = minXPos
+		scrollbar.vX = 0
+	}
 
 	int yPos = expect int( Hud_GetPos( scrollbar.button )[1] )
 
@@ -185,20 +264,24 @@ void function RepositionScrollbar_Horizontal( ScrollbarExt scrollbar, int x, int
 
 void function RepositionScrollbar_Vertical( ScrollbarExt scrollbar, int x, int y )
 {
-	x = x * -1
-	y = y * -1
-
-	int[2] screenSize = GetScreenSize()
 	var sliderPanel = scrollbar.panel
 
 	int minYPos = Hud_GetBaseY( scrollbar.button )
 	int maxYPos = minYPos + Hud_GetHeight( scrollbar.component ) - Hud_GetHeight( scrollbar.button )
 
 	int pos = expect int( Hud_GetPos( scrollbar.button )[1] )
-	int newPos = pos - y
+	int newPos = pos + y
 
-	if ( newPos > maxYPos ) newPos = maxYPos
-	if ( newPos < minYPos ) newPos = minYPos
+	if ( newPos > maxYPos )
+	{
+		newPos = maxYPos
+		scrollbar.vY = Hud_GetHeight( scrollbar.component )
+	}
+	else if ( newPos < minYPos )
+	{
+		newPos = minYPos
+		scrollbar.vY = 0
+	}
 
 	int xPos = expect int( Hud_GetPos( scrollbar.button )[0] )
 
